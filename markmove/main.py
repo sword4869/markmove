@@ -35,6 +35,7 @@ def main():
     new_lines = []
     with open(in_article_file, 'r', encoding='utf-8') as f:
         for line_id, line in enumerate(f):
+            line_id += 1    # start from 1
             regex = '!\[.*\]\(.*\)'
             img_contents = re.findall(regex, line)
             new_img_contents = []
@@ -86,9 +87,10 @@ def main():
             if len(new_img_contents) > 0:
                 others = re.split(regex, line)
                 for id, other in enumerate(others):
+                    if id > 0:
+                        new_line += new_img_contents[id - 1]
                     new_line += other
-                    if id % 2 == 1:
-                        new_line += new_img_contents[id // 2]
+
             else:
                 new_line += line
             new_lines.append(new_line)
