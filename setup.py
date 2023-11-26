@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 setup(
     name='markmove',
-    version='0.0.1',
+    version='0.0.2',
     description='a pip package which is used to move markdown files',
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",

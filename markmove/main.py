@@ -27,7 +27,11 @@ def main():
     os.makedirs(os.path.abspath(os.path.join(args.out_root, args.out_imgsdir)), exist_ok=True)
     os.makedirs(os.path.abspath(os.path.join(args.out_root, args.out_article, '..')), exist_ok=True)
 
-    new_img_content_prefix = '../' * len(args.out_article.split(os.sep)[:-1]) + args.out_imgsdir + '/'
+    slash_num = len(args.out_article.split('/')[:-1])
+    if slash_num == 0:
+        slash_num = len(args.out_article.split('\\')[:-1])
+    print('slash_num:', slash_num)
+    new_img_content_prefix = '../' * slash_num + args.out_imgsdir + '/'
     print('new_img_content_prefix:', new_img_content_prefix)
 
     print('-' * 80)
