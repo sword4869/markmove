@@ -3,6 +3,10 @@
 pip install -e .
 ```
 ```python
+>>> from markmove.main import main
+>>> main()
+
+
 markmove --in_root D:\git\nerf-pytorch --in_article docs\dataset\相机和nerf.md --out_root D:\git\dd --out_article docs/a/aaa.md 
 ```
 ```
