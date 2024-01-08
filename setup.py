@@ -16,6 +16,7 @@ setup(
     entry_points={
         'console_scripts': [
             'markmove = markmove.move:main',
+            'markmove_gui = markmove.gui:main',
         ]
     },
 )

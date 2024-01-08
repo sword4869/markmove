@@ -35,7 +35,6 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
         
         # 下载http/https的图片
         if img_content[0] == 'h':
-            url_without_suffix = None
             print(f'- [{line_id}]', 'http/https', img_content)
             if args.download:
                 url = None
@@ -78,7 +77,9 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
                 img = os.path.abspath(os.path.join(args.in_root, img_content[1:]))
             else:
                 img = os.path.abspath(os.path.join(args.in_root, args.in_article, '..', img_content))
-            assert os.path.exists(img), 'not exists: ' + img
+            
+            if not os.path.exists(img):
+                print('not exists: ' + img)
 
             basename = os.path.basename(img)
 

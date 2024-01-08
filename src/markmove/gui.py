@@ -1,8 +1,5 @@
-import os
 import PySimpleGUI as psg
-from git import Remote
-from tqdm import tqdm
-from markmove import move, utils
+from markmove import move
 
 class MyGUI:
     def __init__(self):
@@ -26,9 +23,10 @@ class MyGUI:
                 psg.Button("OUT_ROOT")
             ],
             [
-                psg.Text("OUT_ARTICLE:"),
-                psg.Input(key='-OUT_ARTICLE-'),
-                psg.Button("OUT_ARTICLE")
+                psg.Text("OUT_ARTICLE_DIR:"),
+                psg.Input(key='-OUT_ARTICLE_DIR-'),
+                psg.Button("OUT_ARTICLE_DIR"),
+                psg.Input(key='-OUT_ARTICLE_NAME-')
             ],
             [
                 psg.Text("OUT_IMAGESDIR:"),
@@ -70,6 +68,8 @@ def main():
             gui.window['-IN_ROOT-'].update(in_root)
         if event == 'IN_ARTICLE':
             in_article = psg.popup_get_file('IN_ARTICLE')
+            if in_article is None:
+                continue
             if not in_article.startswith(values['-IN_ROOT-']):
                 psg.popup_error('IN_ARTICLE must be in IN_ROOT')
                 continue
@@ -77,15 +77,21 @@ def main():
             gui.window['-IN_ARTICLE-'].update(in_article)
         if event == 'OUT_ROOT':
             gui.window['-OUT_ROOT-'].update(psg.popup_get_folder('OUT_ROOT'))
-        if event == 'OUT_ARTICLE':
-            out_article = psg.popup_get_file('OUT_ARTICLE')
-            if not out_article.startswith(values['-OUT_ROOT-']):
-                psg.popup_error('OUT_ARTICLE must be in OUT_ROOT')
+        if event == 'OUT_ARTICLE_DIR':
+            OUT_ARTICLE_DIR = psg.popup_get_file('OUT_ARTICLE_DIR')
+            if OUT_ARTICLE_DIR is None:
                 continue
-            out_article = out_article[len(values['-OUT_ROOT-']) + 1:]
-            gui.window['-OUT_ARTICLE-'].update(out_article)
+            if OUT_ARTICLE_DIR is None:
+                continue
+            if not OUT_ARTICLE_DIR.startswith(values['-OUT_ROOT-']):
+                psg.popup_error('OUT_ARTICLE_DIR must be in OUT_ROOT')
+                continue
+            OUT_ARTICLE_DIR = OUT_ARTICLE_DIR[len(values['-OUT_ROOT-']) + 1:]
+            gui.window['-OUT_ARTICLE_DIR-'].update(OUT_ARTICLE_DIR)
         if event == 'OUT_IMAGESDIR':
             out_imgsdir = psg.popup_get_folder('OUT_IMAGESDIR')
+            if out_imgsdir is None:
+                continue
             if not out_imgsdir.startswith(values['-OUT_ROOT-']):
                 psg.popup_error('OUT_IMAGESDIR must be in OUT_ROOT')
                 continue
@@ -94,12 +100,23 @@ def main():
         if event == '-REMOTE_IMG_SUFFIX_None-':
             gui.window['-REMOTE_IMG_SUFFIX-'].update('None')
         if event == 'START':
+            if values['-IN_ROOT-'] == 'None':
+                psg.popup_error('IN_ROOT is None')
+                continue
+            if values['-IN_ARTICLE-'] == 'None':
+                psg.popup_error('IN_ARTICLE is None')
+                continue
+            if values['-OUT_ROOT-'] == 'None':
+                psg.popup_error('OUT_ROOT is None')
+                continue
+            
             if values['-REMOTE_IMG_SUFFIX-'] == 'None':
                 remote_img_suffix = 'None'
             else:
                 remote_img_suffix = ''
                 remote_img_suffix = ' '.join(values['-REMOTE_IMG_SUFFIX-'].split(' '))
-            cmd = f'--in_root {values["-IN_ROOT-"]} --in_article {values["-IN_ARTICLE-"]} --out_root {values["-OUT_ROOT-"]} --out_article {values["-OUT_ARTICLE-"]} --out_imgsdir {values["-OUT_IMAGESDIR-"]} --remote_img_suffix {remote_img_suffix}'
+            OUT_ARTICLE = values['-OUT_ARTICLE_DIR-'] + '/' + values['-OUT_ARTICLE_NAME-']
+            cmd = f'--in_root {values["-IN_ROOT-"]} --in_article {values["-IN_ARTICLE-"]} --out_root {values["-OUT_ROOT-"]} --OUT_ARTICLE_DIR {OUT_ARTICLE} --out_imgsdir {values["-OUT_IMAGESDIR-"]} --remote_img_suffix {remote_img_suffix}'
             if values['-DOWNLOAD-']:
                 cmd += ' --download'
             if values['-DELETE-']:
