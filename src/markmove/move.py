@@ -6,11 +6,10 @@ import re
 import shutil
 import cv2
 import numpy as np
-from sklearn import base
 from markmove.utils import downloadImage
 
 
-def parse_args():
+def parse_args(cmd):
     parser = configargparse.ArgumentParser()
     parser.add_argument('--in_root', type=str, required=True, help='Input root')
     parser.add_argument('--in_article', type=str, required=True, help='Input article, relativate path')
@@ -21,7 +20,7 @@ def parse_args():
     parser.add_argument('--remote_img_suffix', nargs='+', default=['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'], help='Remote img suffix')
     parser.add_argument('--delete', action='store_true', help='Delete input imgs')
     parser.add_argument('--newline', action='store_true', help='Newline')
-    args = parser.parse_args()
+    args = parser.parse_args(cmd)
     print(args)
     return args
 
@@ -78,7 +77,7 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
             if img_content[0] == '/':
                 img = os.path.abspath(os.path.join(args.in_root, img_content[1:]))
             else:
-                img = os.path.abspath(os.path.join(args.in_article_file, '..', img_content))
+                img = os.path.abspath(os.path.join(args.in_root, args.in_article, '..', img_content))
             assert os.path.exists(img), 'not exists: ' + img
 
             basename = os.path.basename(img)
@@ -113,8 +112,8 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
             new_img_contents.append(new_img_content)
     return new_img_contents
 
-def main():
-    args = parse_args()
+def main(cmd=None):
+    args = parse_args(cmd)
 
     in_article_file = os.path.join(args.in_root, args.in_article)
     out_article_file = os.path.join(args.out_root, args.out_article)
