@@ -6,11 +6,10 @@ import re
 import shutil
 import cv2
 import numpy as np
-from sklearn import base
 from markmove.utils import downloadImage
 
 
-def parse_args():
+def parse_args(cmd):
     parser = configargparse.ArgumentParser()
     parser.add_argument('--in_root', type=str, required=True, help='Input root')
     parser.add_argument('--in_article', type=str, required=True, help='Input article, relativate path')
@@ -21,7 +20,7 @@ def parse_args():
     parser.add_argument('--remote_img_suffix', nargs='+', default=['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'], help='Remote img suffix')
     parser.add_argument('--delete', action='store_true', help='Delete input imgs')
     parser.add_argument('--newline', action='store_true', help='Newline')
-    args = parser.parse_args()
+    args = parser.parse_args(cmd)
     print(args)
     return args
 
@@ -36,7 +35,6 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
         
         # 下载http/https的图片
         if img_content[0] == 'h':
-            url_without_suffix = None
             print(f'- [{line_id}]', 'http/https', img_content)
             if args.download:
                 url = None
@@ -78,8 +76,10 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
             if img_content[0] == '/':
                 img = os.path.abspath(os.path.join(args.in_root, img_content[1:]))
             else:
-                img = os.path.abspath(os.path.join(args.in_article_file, '..', img_content))
-            assert os.path.exists(img), 'not exists: ' + img
+                img = os.path.abspath(os.path.join(args.in_root, args.in_article, '..', img_content))
+            
+            if not os.path.exists(img):
+                print('not exists: ' + img)
 
             basename = os.path.basename(img)
 
@@ -92,7 +92,7 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
                 paste_img = np.zeros((max(show_img.shape[0], show_new_img.shape[0]), show_img.shape[1] + show_new_img.shape[1], show_img.shape[2]), dtype=np.uint8)
                 paste_img[:show_img.shape[0], :show_img.shape[1], :] = show_img
                 paste_img[:show_new_img.shape[0], show_img.shape[1]:, :] = show_new_img
-                cv2.imshow('same? [y/n]', paste_img)
+                cv2.imshow('same? [y/n]. press q to quit', paste_img)
                 if cv2.waitKey(0) == ord('y'):
                     print('skip')
                 elif cv2.waitKey(0) == ord('n'):
@@ -100,7 +100,7 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
                     new_img = os.path.join(args.out_root, args.out_imgsdir, basename)
                     print('new name', new_img)
                     shutil.copy(img, new_img)
-                else:
+                elif cv2.waitKey(0) == ord('q'):
                     print('exit')
                     exit()
             else:
@@ -111,10 +111,11 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
 
             new_img_content = f'![]({new_img_content_prefix + basename})'
             new_img_contents.append(new_img_content)
+    cv2.destroyAllWindows()
     return new_img_contents
 
-def main():
-    args = parse_args()
+def main(cmd=None):
+    args = parse_args(cmd)
 
     in_article_file = os.path.join(args.in_root, args.in_article)
     out_article_file = os.path.join(args.out_root, args.out_article)
@@ -159,6 +160,7 @@ def main():
     with open(out_article_file, 'w', encoding='utf-8') as f:
         for line in new_lines:
             f.write(line)
+    print('Done!')
 
 if __name__ == '__main__':
     main()
