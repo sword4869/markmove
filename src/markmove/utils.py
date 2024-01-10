@@ -1,7 +1,8 @@
 import re
 import requests
-import os
-
+from PIL import Image
+import numpy as np
+import cv2
 
 def getUrl(img_content, filter_suffix):
     # 括号内部和去掉括号
@@ -99,3 +100,12 @@ def downloadImage(url, imageNameSave):
             f.write(r.content)
     # 返回markdown中图片路径
     return True
+
+def load_img(img_path: str):
+    '''
+    cv2.imread()的替代函数，支持中文路径
+    '''
+    img = Image.open(img_path)
+    img = np.array(img, dtype=np.uint8)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    return img
