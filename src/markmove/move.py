@@ -6,18 +6,18 @@ import re
 import shutil
 import cv2
 import numpy as np
-from markmove.utils import downloadImage
+from markmove.utils import downloadImage, load_img
 
 
 def parse_args(cmd):
     parser = configargparse.ArgumentParser()
-    parser.add_argument('--in_root', type=str, required=True, help='Input root')
+    parser.add_argument('--in_root', type=str, required=True, help='Input root. ![](/image/b0.png) 所代表的image文件夹的路径')
     parser.add_argument('--in_article', type=str, required=True, help='Input article, relativate path')
     parser.add_argument('--out_root', type=str, required=True, help='Output root')
     parser.add_argument('--out_article', type=str, required=True, help='Output article, relativate path')
     parser.add_argument('--out_imgsdir', type=str, default='images', help='Output imgs directory')
     parser.add_argument('--download', action='store_true', help='Download input imgs')
-    parser.add_argument('--remote_img_suffix', nargs='+', default=['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'], help='Remote img suffix')
+    parser.add_argument('--remote_img_suffix', nargs='+', default=['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'], help='Remote img_path suffix')
     parser.add_argument('--delete', action='store_true', help='Delete input imgs')
     parser.add_argument('--newline', action='store_true', help='Newline')
     args = parser.parse_args(cmd)
@@ -74,43 +74,44 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
         else:
             # `![](/image/b0.png)`的格式需要特殊处理
             if img_content[0] == '/':
-                img = os.path.abspath(os.path.join(args.in_root, img_content[1:]))
+                img_path = os.path.abspath(os.path.join(args.in_root, img_content[1:]))
             else:
-                img = os.path.abspath(os.path.join(args.in_root, args.in_article, '..', img_content))
+                img_path = os.path.abspath(os.path.join(args.in_root, args.in_article, '..', img_content))
             
-            if not os.path.exists(img):
-                print('not exists: ' + img)
+            if not os.path.exists(img_path):
+                print('not exists: ' + img_path)
 
-            basename = os.path.basename(img)
+            basename = os.path.basename(img_path)
 
-            new_img = os.path.join(args.out_root, args.out_imgsdir, basename)
+            new_img_path = os.path.join(args.out_root, args.out_imgsdir, basename)
             # 如果图片已经存在，需要判断是否相同. 如果相同，跳过；如果不同，需要手动确认是否覆盖
-            if os.path.exists(new_img):
-                print(line_id, 'exists: ' + new_img)
-                show_img = cv2.imread(img)
-                show_new_img = cv2.imread(new_img)
+            if os.path.exists(new_img_path):
+                print(f'- [{line_id}] exists: {img_path} -> {new_img_path}')
+                show_img = load_img(img_path)
+                show_new_img = load_img(new_img_path)
                 paste_img = np.zeros((max(show_img.shape[0], show_new_img.shape[0]), show_img.shape[1] + show_new_img.shape[1], show_img.shape[2]), dtype=np.uint8)
                 paste_img[:show_img.shape[0], :show_img.shape[1], :] = show_img
                 paste_img[:show_new_img.shape[0], show_img.shape[1]:, :] = show_new_img
-                cv2.imshow('same? [y/n]', paste_img)
+                cv2.imshow('same? [y/n]. press q to quit', paste_img)
                 if cv2.waitKey(0) == ord('y'):
                     print('skip')
                 elif cv2.waitKey(0) == ord('n'):
-                    basename = os.path.basename(img).split('.')[0] + '_new.' + os.path.basename(img).split('.')[1]
-                    new_img = os.path.join(args.out_root, args.out_imgsdir, basename)
-                    print('new name', new_img)
-                    shutil.copy(img, new_img)
-                else:
+                    basename = os.path.basename(img_path).split('.')[0] + '_new.' + os.path.basename(img_path).split('.')[1]
+                    new_img_path = os.path.join(args.out_root, args.out_imgsdir, basename)
+                    print('new name', new_img_path)
+                    shutil.copy(img_path, new_img_path)
+                elif cv2.waitKey(0) == ord('q'):
                     print('exit')
                     exit()
             else:
-                shutil.copy(img, new_img)
+                shutil.copy(img_path, new_img_path)
             # 删除原来的图片
             if args.delete:
-                os.remove(img)
+                os.remove(img_path)
 
             new_img_content = f'![]({new_img_content_prefix + basename})'
             new_img_contents.append(new_img_content)
+    cv2.destroyAllWindows()
     return new_img_contents
 
 def main(cmd=None):
@@ -159,6 +160,7 @@ def main(cmd=None):
     with open(out_article_file, 'w', encoding='utf-8') as f:
         for line in new_lines:
             f.write(line)
+    print('Done!')
 
 if __name__ == '__main__':
     main()

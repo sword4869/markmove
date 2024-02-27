@@ -2,6 +2,6 @@ __pycache__
 *.egg-info
 *.egg
 build
-images
 dist
 test
+.vscode
