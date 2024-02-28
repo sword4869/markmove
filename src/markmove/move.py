@@ -9,21 +9,6 @@ import numpy as np
 from markmove.utils import downloadImage, load_img
 
 
-def parse_args(cmd):
-    parser = configargparse.ArgumentParser()
-    parser.add_argument('--in_root', type=str, required=True, help='Input root. ![](/image/b0.png) 所代表的image文件夹的路径')
-    parser.add_argument('--in_article', type=str, required=True, help='Input article, relativate path')
-    parser.add_argument('--out_root', type=str, required=True, help='Output root')
-    parser.add_argument('--out_article', type=str, required=True, help='Output article, relativate path')
-    parser.add_argument('--out_imgsdir', type=str, default='images', help='Output imgs directory')
-    parser.add_argument('--download', action='store_true', help='Download input imgs')
-    parser.add_argument('--remote_img_suffix', nargs='+', default=['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp'], help='Remote img_path suffix')
-    parser.add_argument('--delete', action='store_true', help='Delete input imgs')
-    parser.add_argument('--newline', action='store_true', help='Newline')
-    args = parser.parse_args(cmd)
-    print(args)
-    return args
-
 def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
     new_img_contents = []
 
@@ -114,20 +99,23 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
     cv2.destroyAllWindows()
     return new_img_contents
 
-def main(cmd=None):
-    args = parse_args(cmd)
-
+def main(args):
     in_article_file = os.path.join(args.in_root, args.in_article)
-    out_article_file = os.path.join(args.out_root, args.out_article)
+    out_article_file = os.path.join(args.out_root, args.out_article_dir, args.out_article_name)
+    print()
     print('in_article_file:', in_article_file)
+    print()
     print('out_article_file:', out_article_file)
 
-    os.makedirs(os.path.abspath(os.path.join(args.out_root, args.out_imgsdir)), exist_ok=True)
-    os.makedirs(os.path.abspath(os.path.join(args.out_root, args.out_article, '..')), exist_ok=True)
 
-    slash_num = len(args.out_article.split('/')[:-1])
+
+    os.makedirs(os.path.abspath(os.path.join(args.out_root, args.out_imgsdir)), exist_ok=True)
+    os.makedirs(os.path.abspath(os.path.join(args.out_root, args.out_article_dir)), exist_ok=True)
+
+    local_path = args.out_article_dir
+    slash_num = len(local_path.split('/')[:-1])
     if slash_num == 0:
-        slash_num = len(args.out_article.split('\\')[:-1])
+        slash_num = len(local_path.split('\\')[:-1])
     print('slash_num:', slash_num)
     new_img_content_prefix = '../' * slash_num + args.out_imgsdir + '/'
     print('new_img_content_prefix:', new_img_content_prefix)
