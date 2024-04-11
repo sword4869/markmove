@@ -1,3 +1,4 @@
+from pickle import TRUE
 import random
 import time
 import configargparse
@@ -9,7 +10,7 @@ import numpy as np
 from markmove.utils import downloadImage, load_img
 
 
-def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
+def getNewImgContents(img_contents, line_id, args, new_img_content_prefix, copy_image_list):
     new_img_contents = []
 
     # 如果一行有多个图片，先复制图片，再设定新的图片路径
@@ -69,8 +70,11 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
             basename = os.path.basename(img_path)
 
             new_img_path = os.path.join(args.out_root, args.out_imgsdir, basename)
+            copy_img = True
             # 如果图片已经存在，需要判断是否相同. 如果相同，跳过；如果不同，需要手动确认是否覆盖
-            if os.path.exists(new_img_path):
+            # 循环直到不重名
+            i = 1
+            while(os.path.exists(new_img_path)):
                 print(f'- [{line_id}] exists: {img_path} -> {new_img_path}')
                 show_img = load_img(img_path)
                 show_new_img = load_img(new_img_path)
@@ -80,19 +84,19 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
                 cv2.imshow('same? [y/n]. press q to quit', paste_img)
                 if cv2.waitKey(0) == ord('y'):
                     print('skip')
+                    copy_img = False
+                    break
                 elif cv2.waitKey(0) == ord('n'):
-                    basename = os.path.basename(img_path).split('.')[0] + '_new.' + os.path.basename(img_path).split('.')[1]
+                    basename = os.path.basename(img_path).split('.')[0] + '_new' * i + '.' + os.path.basename(img_path).split('.')[1]
                     new_img_path = os.path.join(args.out_root, args.out_imgsdir, basename)
                     print('new name', new_img_path)
-                    shutil.copy(img_path, new_img_path)
                 elif cv2.waitKey(0) == ord('q'):
                     print('exit')
                     exit()
-            else:
-                shutil.copy(img_path, new_img_path)
-            # 删除原来的图片
-            if args.delete:
-                os.remove(img_path)
+
+                i += 1
+            if copy_img:
+                copy_image_list.append((img_path, new_img_path))
 
             new_img_content = f'![]({new_img_content_prefix + basename})'
             new_img_contents.append(new_img_content)
@@ -102,35 +106,39 @@ def getNewImgContents(img_contents, line_id, args, new_img_content_prefix):
 def main(args):
     in_article_file = os.path.join(args.in_root, args.in_article)
     out_article_file = os.path.join(args.out_root, args.out_article_dir, args.out_article_name)
-    print()
     print('in_article_file:', in_article_file)
     print()
     print('out_article_file:', out_article_file)
-
-
+    print()
 
     os.makedirs(os.path.abspath(os.path.join(args.out_root, args.out_imgsdir)), exist_ok=True)
     os.makedirs(os.path.abspath(os.path.join(args.out_root, args.out_article_dir)), exist_ok=True)
 
     local_path = args.out_article_dir
-    slash_num = len(local_path.split('/')[:-1])
-    if slash_num == 0:
-        slash_num = len(local_path.split('\\')[:-1])
+    print('local_path:', local_path)
+    slash_num = len(local_path.split('/'))
+    if slash_num == 0:      # for windows
+        slash_num = len(local_path.split('\\'))
     print('slash_num:', slash_num)
-    new_img_content_prefix = '../' * slash_num + args.out_imgsdir + '/'
+    if slash_num == 0:
+        new_img_content_prefix = './' + args.out_imgsdir + '/'
+    else:
+        new_img_content_prefix = '../' * slash_num + args.out_imgsdir + '/'
     print('new_img_content_prefix:', new_img_content_prefix)
 
     print('-' * 80)
 
     new_lines = []
+    # 延迟拷贝图片，避免图片重名
+    copy_image_list = []
     with open(in_article_file, 'r', encoding='utf-8') as f:
         for line_id, line in enumerate(f):
             line_id += 1    # start from 1
             regex = '!\[.*\]\(.*\)'
             img_contents = re.findall(regex, line)
             
-            new_img_contents = getNewImgContents(img_contents, line_id, args, new_img_content_prefix)
-
+            # 可能一行有多个图片
+            new_img_contents = getNewImgContents(img_contents, line_id, args, new_img_content_prefix, copy_image_list)
             new_line = ''
             if len(new_img_contents) > 0:
                 others = re.split(regex, line)
@@ -138,12 +146,16 @@ def main(args):
                     if id > 0:
                         new_line += new_img_contents[id - 1]
                     new_line += other
-
             else:
                 new_line += line
             new_lines.append(new_line)
             if args.newline:
                 new_lines.append('\n')
+
+    for img_path, new_img_path in copy_image_list:
+        shutil.copy(img_path, new_img_path)
+        if args.delete:
+            os.remove(img_path)
 
     with open(out_article_file, 'w', encoding='utf-8') as f:
         for line in new_lines:

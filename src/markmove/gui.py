@@ -60,7 +60,7 @@ class MyGUI:
             resizable=True,  # Resize
         )
 
-def parse_args():
+def parse_args(cmd_args=None):
     parser = configargparse.ArgumentParser()
     parser.add_argument('--in_root', default='', type=str,  help='Input root. ![](/image/b0.png) 所代表的image文件夹的路径')
     parser.add_argument('--in_article', default='', type=str,  help='Input article, relativate path')
@@ -74,7 +74,7 @@ def parse_args():
     parser.add_argument('--download', action='store_true', help='Download input imgs')
     parser.add_argument('--delete', action='store_true', help='Delete input imgs')
     parser.add_argument('--newline', action='store_true', help='Newline')
-    return parser.parse_args()
+    return parser.parse_args(cmd_args)
 
 def main():
     args = parse_args()
@@ -120,8 +120,8 @@ def main():
         if event == '-REMOTE_IMG_SUFFIX_None-':
             gui.window['-REMOTE_IMG_SUFFIX-'].update('None')
         if event == 'START':
-            print()
             print(values)
+            print()
             if values['-IN_ROOT-'] == '':
                 psg.popup_error('IN_ROOT is None')
                 continue
@@ -158,8 +158,12 @@ def main():
                 debug_info.append('--delete')
             if values['-NEWLINE-']:
                 debug_info.append('--newline')
-            print()
+
             print(debug_info)
+            print()
+            args = parse_args(debug_info.split(' '))
+            print('args: ', args)
+            print()
             move.main(args)
             psg.popup_ok('Done!')
     gui.window.close()
